@@ -75,7 +75,6 @@ static menuframework_s *s_current_menu;
 static int                s_current_menu_index;
 
 static menulist_s        s_mode_list[2];
-static menulist_s        s_ref_list[2];
 static menuslider_s        s_tq_slider;
 static menuslider_s        s_screensize_slider[2];
 static menuslider_s        s_brightness_slider[2];
@@ -88,19 +87,13 @@ static menuaction_s        s_defaults_action[2];
 
 static void DriverCallback( void *unused )
 {
-    s_ref_list[!s_current_menu_index].curvalue = s_ref_list[s_current_menu_index].curvalue;
-
-    if ( s_ref_list[s_current_menu_index].curvalue < GL_REF_START )
-    {
-        s_current_menu = &s_software_menu;
-        s_current_menu_index = 0;
-    }
-    else
-    {
-        s_current_menu = &s_opengl_menu;
-        s_current_menu_index = 1;
-    }
-
+#if QGL
+    s_current_menu = &s_opengl_menu;
+    s_current_menu_index = 1;
+#else
+    s_current_menu = &s_software_menu;
+    s_current_menu_index = 0;
+#endif
 }
 
 static void ScreenSizeCallback( void *s )
@@ -142,7 +135,6 @@ static void ApplyChanges( void *unused )
     */
     s_fs_box[!s_current_menu_index].curvalue = s_fs_box[s_current_menu_index].curvalue;
     s_brightness_slider[!s_current_menu_index].curvalue = s_brightness_slider[s_current_menu_index].curvalue;
-    s_ref_list[!s_current_menu_index].curvalue = s_ref_list[s_current_menu_index].curvalue;
 
     /*
     ** invert sense so greater = brighter, and scale to a range of 0.5 to 1.3
@@ -157,24 +149,6 @@ static void ApplyChanges( void *unused )
     Cvar_SetValue( "sw_mode", s_mode_list[SOFTWARE_MENU].curvalue );
     Cvar_SetValue( "gl_mode", s_mode_list[OPENGL_MENU].curvalue );
     Cvar_SetValue( "_windowed_mouse", s_windowed_mouse.curvalue);
-
-    /*
-    ** must use an if here (instead of a switch), since the REF_'s are now variables
-    ** and not #DEFINE's (constants)
-    */
-    ref = s_ref_list[s_current_menu_index].curvalue;
-    if ( ref == REF_SOFTSDL )
-    {
-        Cvar_Set( "vid_ref", "softsdl" );
-    }
-    else if ( ref == REF_SDLGL )
-    {
-        Cvar_Set( "vid_ref", "sdlgl" );
-        // below is wrong if we use different libs for different GL reflibs
-        Cvar_Get( "gl_driver", "libGL.so.1", CVAR_ARCHIVE ); // ??? create if it doesn't exist
-        if (gl_driver->modified)
-            vid_ref->modified = true;
-    }
 
 #if 0
     /*
@@ -304,16 +278,11 @@ void VID_MenuInit( void )
     s_screensize_slider[SOFTWARE_MENU].curvalue = scr_viewsize->value/10;
     s_screensize_slider[OPENGL_MENU].curvalue = scr_viewsize->value/10;
 
-    if (strcmp( vid_ref->string, "softsdl" ) == 0 )
-    {
-        s_current_menu_index = SOFTWARE_MENU;
-        s_ref_list[0].curvalue = s_ref_list[1].curvalue = REF_SOFTSDL;
-    }
-    else if ( strcmp( vid_ref->string, "sdlgl" ) == 0 )
-    {
-        s_current_menu_index = OPENGL_MENU;
-        s_ref_list[s_current_menu_index].curvalue = REF_SDLGL;
-    }
+#if QGL
+    s_current_menu_index = OPENGL_MENU;
+#else
+    s_current_menu_index = SOFTWARE_MENU;
+#endif
 
     s_software_menu.x = viddef.width * 0.50;
     s_software_menu.nitems = 0;
@@ -322,13 +291,6 @@ void VID_MenuInit( void )
 
     for ( i = 0; i < 2; i++ )
     {
-        s_ref_list[i].generic.type = MTYPE_SPINCONTROL;
-        s_ref_list[i].generic.name = "driver";
-        s_ref_list[i].generic.x = 0;
-        s_ref_list[i].generic.y = 0;
-        s_ref_list[i].generic.callback = DriverCallback;
-        s_ref_list[i].itemnames = (const char **) refs;
-
         s_mode_list[i].generic.type = MTYPE_SPINCONTROL;
         s_mode_list[i].generic.name = "video mode";
         s_mode_list[i].generic.x = 0;
@@ -401,7 +363,6 @@ void VID_MenuInit( void )
     s_paletted_texture_box.itemnames = yesno_names;
     s_paletted_texture_box.curvalue = gl_ext_palettedtexture->value;
 
-    Menu_AddItem( &s_software_menu, ( void * ) &s_ref_list[SOFTWARE_MENU] );
     Menu_AddItem( &s_software_menu, ( void * ) &s_mode_list[SOFTWARE_MENU] );
     Menu_AddItem( &s_software_menu, ( void * ) &s_screensize_slider[SOFTWARE_MENU] );
     Menu_AddItem( &s_software_menu, ( void * ) &s_brightness_slider[SOFTWARE_MENU] );
@@ -409,7 +370,6 @@ void VID_MenuInit( void )
     Menu_AddItem( &s_software_menu, ( void * ) &s_stipple_box );
     Menu_AddItem( &s_software_menu, ( void * ) &s_windowed_mouse );
 
-    Menu_AddItem( &s_opengl_menu, ( void * ) &s_ref_list[OPENGL_MENU] );
     Menu_AddItem( &s_opengl_menu, ( void * ) &s_mode_list[OPENGL_MENU] );
     Menu_AddItem( &s_opengl_menu, ( void * ) &s_screensize_slider[OPENGL_MENU] );
     Menu_AddItem( &s_opengl_menu, ( void * ) &s_brightness_slider[OPENGL_MENU] );
