@@ -201,6 +201,17 @@ else()
   target_compile_definitions(ref-softsdl PRIVATE REF_HARD_LINKED=1)
 endif()
 
+if(GAMEKID)
+  target_link_libraries(quake2 PRIVATE
+    iconv
+    ${SDL2_LIBRARY}
+  )
+endif()
+
 install (TARGETS quake2 RUNTIME DESTINATION bin)
 #install (TARGETS ref-softsdl ref-sdlgl LIBRARY DESTINATION lib/quake2sdl)
 #install (TARGETS game-base LIBRARY DESTINATION lib/quake2sdl/baseq2)
+
+if(GAMEKID)
+  include(CPack)
+endif()

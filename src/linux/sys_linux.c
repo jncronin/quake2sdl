@@ -27,8 +27,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <fcntl.h>
 #include <stdarg.h>
 #include <stdio.h>
+#ifndef __GAMEKID__
 #include <sys/ipc.h>
 #include <sys/shm.h>
+#endif
 #include <sys/stat.h>
 #include <string.h>
 #include <ctype.h>
@@ -45,7 +47,9 @@ cvar_t *nostdout;
 
 unsigned    sys_frame_time;
 
+#ifndef __GAMEKID__
 uid_t saved_euid;
+#endif
 qboolean stdin_active = true;
 
 // =======================================================================
@@ -237,8 +241,10 @@ int main (int argc, char **argv)
     int     time, oldtime, newtime;
 
     // go back to real user for config loads
+#ifndef __GAMEKID__
     saved_euid = geteuid();
     seteuid(getuid());
+#endif
     
     printf ("Quake 2 -- Version %s\n", LINUX_VERSION);
 

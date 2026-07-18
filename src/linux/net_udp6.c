@@ -294,7 +294,7 @@ char    *NET_BaseAdrToString (netadr_t a)
                     Com_sprintf (s, sizeof(s), "<invalid>");
 
                 else {
-                        
+#ifndef __GAMEKID__                        
                         if (a.type == NA_MULTICAST6 ||
                             IN6_IS_ADDR_LINKLOCAL(&((struct sockaddr_in6 *)&ss)->sin6_addr)) {
                                 /* If the address is multicast (link) or a
@@ -309,6 +309,7 @@ char    *NET_BaseAdrToString (netadr_t a)
                                 Com_sprintf (tmp, sizeof(tmp), "%s%%%d", s, s6->sin6_scope_id);
                                 memcpy(s, tmp, sizeof(s));
                         }
+#endif
                 }
                 
                 break;
@@ -378,7 +379,13 @@ qboolean    NET_StringToSockaddr (char *s, struct sockaddr_storage *sadr)
 
     if ((err = getaddrinfo (addrs, ports, &hints, &resultp))) {
                 // Error
-                Com_Printf ("NET_StringToSockaddr: string %s:\n%s\n", s, gai_strerror(err));
+                Com_Printf ("NET_StringToSockaddr: string %s:\n%s\n", s,
+#ifdef __GAMEKID__
+                    "gai_strerror() not implemented"
+#else
+                    gai_strerror(err)
+#endif
+                );
                 return 0;
         }
 
@@ -593,6 +600,7 @@ void NET_SendPacket (netsrc_t sock, int length, void *data, netadr_t to)
         if (!net_socket)
             return;
         }
+#ifndef __GAMEKID__
         if (addr.ss_family == AF_INET6) {
                 struct sockaddr_in6 *s6 = (struct sockaddr_in6 *)&addr;
                 
@@ -647,6 +655,7 @@ void NET_SendPacket (netsrc_t sock, int length, void *data, netadr_t to)
                         
                 }
         }
+#endif
         
 
         ret = sendto (net_socket, data, length, 0, (struct sockaddr *)&addr, addr_size );
@@ -766,7 +775,9 @@ int NET_Socket (char *net_interface, int port, netsrc_t type, int family)
 #ifdef IPV6_BINDV6ONLY
         int         dummy;
 #endif
+#ifndef __GAMEKID__
         struct ipv6_mreq mreq;
+#endif
         cvar_t *mcast;
 
         memset (&hints, 0, sizeof (hints));
@@ -797,17 +808,21 @@ int NET_Socket (char *net_interface, int port, netsrc_t type, int family)
                         Com_Printf("NET_Socket: socket: %s\n", strerror (errno));
                         continue;
                 }
+#ifndef __GAMEKID__
                 // make it non-blocking
                 if (ioctl (newsocket, FIONBIO, (char *) &_true) == -1) {
                         Com_Printf("NET_Socket: ioctl FIONBIO: %s\n", strerror (errno));
                         continue;
                 }
+#endif
 #ifdef IPV6_BINDV6ONLY
+#ifndef __GAMEKID__
                 if (family == AF_INET6)
                         if (setsockopt (newsocket, IPPROTO_IPV6, IPV6_BINDV6ONLY, &dummy,
                                         sizeof (dummy)) < 0) {
                                 Com_Printf("NET_Socket: setsockopt IPV6_BINDV6ONLY: %s\n", strerror (errno));
                         }
+#endif
 #endif
                 if (family == AF_INET) {
                         // make it broadcast capable
@@ -836,6 +851,7 @@ int NET_Socket (char *net_interface, int port, netsrc_t type, int family)
         case AF_INET:
                 break;
                 
+#ifndef __GAMEKID__
         case AF_INET6:
                 /* Multicast outgoing interface is specified for
                  * client and server (+set multicast <ifname>) */
@@ -864,6 +880,7 @@ int NET_Socket (char *net_interface, int port, netsrc_t type, int family)
                         }
                 }
                 break;
+#endif
         }
         
         return newsocket;        

@@ -156,7 +156,11 @@ vidmode_t vid_modes[] =
     { "Mode 1: 400x300",   400, 300,   1 },
     { "Mode 2: 512x384",   512, 384,   2 },
     { "Mode 3: 640x480",   640, 480,   3 },
+#ifdef __GAMEKID__
+    { "Mode 4: 800x480",   800, 480,   4 },
+#else
     { "Mode 4: 800x600",   800, 600,   4 },
+#endif
     { "Mode 5: 960x720",   960, 720,   5 },
     { "Mode 6: 1024x768",  1024, 768,  6 },
     { "Mode 7: 1152x864",  1152, 864,  7 },
@@ -268,8 +272,10 @@ qboolean VID_LoadRefresh( char *name )
     Key_ClearStates();
     
     // give up root now
+#ifndef __GAMEKID__
     setreuid(getuid(), getuid());
     setegid(getgid());
+#endif
 
     Com_Printf( "------------------------------------\n");
     reflib_active = true;
