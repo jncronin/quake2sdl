@@ -903,6 +903,7 @@ void FS_InitFilesystem (void)
     //
     // add baseq2 to search path
     //
+    FS_AddGameDirectory (".");
     FS_AddGameDirectory (va("%s/%s", RESOURCE_LIBDIR, BASEDIRNAME));
     FS_AddGameDirectory (va("%s/%s", RESOURCE_DATADIR, BASEDIRNAME));
     FS_AddGameDirectory (va("%s/"BASEDIRNAME, fs_basedir->string) );
