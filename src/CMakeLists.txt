@@ -105,6 +105,7 @@ add_library (ref-softsdl STATIC
   linux/glob.c
   linux/rw_linux.c
   linux/rw_sdl.c
+  linux/joystick.c
   )
 set_target_properties (ref-softsdl PROPERTIES OUTPUT_NAME ref_softsdl PREFIX "")
 
@@ -200,6 +201,16 @@ else()
   target_link_libraries(quake2 PRIVATE ref-softsdl)
   target_compile_definitions(ref-softsdl PRIVATE REF_HARD_LINKED=1)
 endif()
+
+target_compile_definitions(quake2 PRIVATE
+  Joystick=1
+)
+target_compile_definitions(ref-softsdl PRIVATE
+  Joystick=1
+)
+target_compile_definitions(ref-sdlgl PRIVATE
+  Joystick=1
+)
 
 if(GAMEKID)
   target_link_libraries(quake2 PRIVATE
