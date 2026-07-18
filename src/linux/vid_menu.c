@@ -190,7 +190,11 @@ void VID_MenuInit( void )
     static const char *resolutions[] = 
     {
         "[320 240  ]",
+#ifdef __GAMEKID__
+        "[400 240  ]",
+#else
         "[400 300  ]",
+#endif
         "[512 384  ]",
         "[640 480  ]",
 #ifdef __GAMEKID__

@@ -153,7 +153,11 @@ typedef struct vidmode_s
 vidmode_t vid_modes[] =
 {
     { "Mode 0: 320x240",   320, 240,   0 },
+#ifdef __GAMEKID__
+    { "Mode 1: 400x240",   400, 240,   1 },
+#else
     { "Mode 1: 400x300",   400, 300,   1 },
+#endif
     { "Mode 2: 512x384",   512, 384,   2 },
     { "Mode 3: 640x480",   640, 480,   3 },
 #ifdef __GAMEKID__
