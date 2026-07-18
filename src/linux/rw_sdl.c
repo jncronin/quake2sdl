@@ -380,6 +380,10 @@ void GetEvent(SDL_Event *event)
 #ifdef Joystick
 qboolean OpenJoystick(cvar_t *joy_dev) {
   int num_joysticks, i;
+  if(joy)
+  {
+    SDL_JoystickClose(joy);
+  }
   joy = NULL;
 
   if (!(SDL_INIT_JOYSTICK&SDL_WasInit(SDL_INIT_JOYSTICK))) {
@@ -390,14 +394,12 @@ qboolean OpenJoystick(cvar_t *joy_dev) {
   if ((num_joysticks=SDL_NumJoysticks())) {
     for(i=0;i<num_joysticks;i++) {
       ri.Con_Printf(PRINT_ALL, "Trying joystick [%s]\n", 
-            SDL_JoystickName(i));
-      if (!SDL_JoystickOpened(i)) {
-    joy = SDL_JoystickOpen(i);
-    if (joy) {
-      ri.Con_Printf(PRINT_ALL, "Joytick activated.\n");
-      joy_numbuttons = SDL_JoystickNumButtons(joy);
-      break;
-    }
+            SDL_JoystickNameForIndex(i));
+      joy = SDL_JoystickOpen(i);
+      if (joy) {
+        ri.Con_Printf(PRINT_ALL, "Joytick activated.\n");
+        joy_numbuttons = SDL_JoystickNumButtons(joy);
+        break;
       }
     }
     if (!joy) {
