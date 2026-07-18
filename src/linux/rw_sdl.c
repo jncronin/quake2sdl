@@ -564,8 +564,11 @@ static qboolean SWimp_InitGraphics( qboolean fullscreen )
 
     renderer = SDL_CreateRenderer (window, -1, SDL_RENDERER_ACCELERATED);
     if (renderer == NULL) {
-        Sys_Error("(SOFTSDL) SDL CreateRenderer failed: %s\n", SDL_GetError());
-        return false;
+        renderer = SDL_CreateRenderer (window, -1, 0);
+        if (renderer == NULL) {
+            Sys_Error("(SOFTSDL) SDL CreateRenderer failed: %s\n", SDL_GetError());
+            return false;
+        }
     }
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
     SDL_RenderSetLogicalSize(renderer, vid.width, vid.height);
