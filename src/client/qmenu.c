@@ -660,6 +660,11 @@ void SpinControl_Draw( menulist_s *s )
 {
     char buffer[100];
 
+    if( !s->itemnames[s->curvalue] )
+    {
+        return;
+    }
+
     if ( s->generic.name )
     {
         Menu_DrawStringR2LDark( s->generic.x + s->generic.parent->x + LCOLUMN_OFFSET, 
@@ -672,7 +677,8 @@ void SpinControl_Draw( menulist_s *s )
     }
     else
     {
-        strcpy( buffer, s->itemnames[s->curvalue] );
+        strncpy( buffer, s->itemnames[s->curvalue], sizeof(buffer) - 1 );
+        buffer[sizeof(buffer) - 1] = 0;
         *strchr( buffer, '\n' ) = 0;
         Menu_DrawString( RCOLUMN_OFFSET + s->generic.x + s->generic.parent->x, s->generic.y + s->generic.parent->y, buffer );
         strcpy( buffer, strchr( s->itemnames[s->curvalue], '\n' ) + 1 );
