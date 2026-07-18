@@ -242,8 +242,12 @@ qboolean VID_LoadRefresh( char *name )
     snprintf (fn, MAX_OSPATH, "%s/%s", RESOURCE_LIBDIR, name );
     
     if (stat(fn, &st) == -1) {
-        Com_Printf( "LoadLibrary(\"%s\") failed: %s\n", name, strerror(errno));
-        return false;
+        snprintf(fn, MAX_OSPATH, "./%s", name);
+        if (stat(fn, &st) == -1) {
+            char cwd_buf[1024];
+            Com_Printf( "LoadLibrary(\"%s\") failed (stat step: cwd: %s): %s\n", name, getcwd(cwd_buf, sizeof(cwd_buf)), strerror(errno));
+            return false;
+        }
     }
     
     // permission checking
