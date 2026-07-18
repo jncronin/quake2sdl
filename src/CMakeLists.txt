@@ -206,6 +206,16 @@ if(GAMEKID)
     iconv
     ${SDL2_LIBRARY}
   )
+
+  if(QGL)
+    target_link_libraries(quake2 PRIVATE
+      GL
+      z
+    )
+    target_sources(quake2 PRIVATE
+      dummy.cpp
+    )
+  endif()
 endif()
 
 install (TARGETS quake2 RUNTIME DESTINATION bin)
