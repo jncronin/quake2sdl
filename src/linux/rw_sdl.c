@@ -586,6 +586,10 @@ static qboolean SWimp_InitGraphics( qboolean fullscreen )
         return false;
     }
 
+#ifdef __GAMEKID__
+    SDL_ShowCursor(SDL_DISABLE);
+#endif
+
     vid.rowbytes = surface->pitch;
     vid.buffer = surface->pixels;
 
@@ -668,6 +672,10 @@ static qboolean GLimp_InitGraphics( qboolean fullscreen )
             }
         }
     }
+
+#ifdef __GAMEKID__
+    SDL_ShowCursor(SDL_DISABLE);
+#endif
 
     X11_active = true;
 
