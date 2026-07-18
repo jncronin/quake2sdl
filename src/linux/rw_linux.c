@@ -35,6 +35,12 @@ static int mouse_oldbuttonstate;
 static cvar_t *use_stencil;
 #endif
 
+char *RW_Sys_GetClipboardData(void) __attribute__((weak));
+char *RW_Sys_GetClipboardData()
+{
+  return NULL;
+}
+
 in_state_t *getState() {
   return in_state;
 }

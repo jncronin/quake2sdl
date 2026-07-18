@@ -41,11 +41,15 @@ cvar_t    *timelimit;
 cvar_t    *password;
 cvar_t    *spectator_password;
 cvar_t    *needpass;
+#ifndef GAME_HARD_LINKED
 cvar_t    *maxclients;
+#endif
 cvar_t    *maxspectators;
 cvar_t    *maxentities;
 cvar_t    *g_select_empty;
+#ifndef GAME_HARD_LINKED
 cvar_t    *dedicated;
+#endif
 
 cvar_t    *filterban;
 

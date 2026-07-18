@@ -77,12 +77,12 @@ else (WITH_QMAX)
 endif (WITH_QMAX)
 
 add_executable (quake2 ${Q2_SOURCES})
-target_link_libraries (quake2 ${SDL2_LIBRARY} m)
-if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-  target_link_libraries (quake2 dl)
-endif (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+target_link_libraries (quake2 PRIVATE ${SDL2_LIBRARY} m)
+#if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+#  target_link_libraries (quake2 PRIVATE dl)
+#endif (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 
-add_library (ref-softsdl SHARED
+add_library (ref-softsdl STATIC
   ref_soft/r_aclip.c
   ref_soft/r_alias.c
   ref_soft/r_bsp.c
@@ -114,7 +114,7 @@ else (WITH_QMAX)
   set (GL_DIR ref_gl)
 endif (WITH_QMAX)
 
-add_library (ref-sdlgl SHARED
+add_library (ref-sdlgl STATIC
   ${GL_DIR}/gl_draw.c
   ${GL_DIR}/gl_image.c
   ${GL_DIR}/gl_light.c
@@ -138,7 +138,7 @@ endif (WITH_QMAX)
 target_compile_definitions (ref-sdlgl PRIVATE -DOPENGL)
 set_target_properties (ref-sdlgl PROPERTIES OUTPUT_NAME ref_sdlgl PREFIX "")
 
-add_library (game-base SHARED
+add_library (game-base STATIC
   game/g_ai.c
   game/p_client.c
   game/g_chase.c
@@ -189,6 +189,17 @@ add_library (game-base SHARED
   game/m_flash.c)
 set_target_properties (game-base PROPERTIES OUTPUT_NAME game PREFIX "")
 
+target_link_libraries(quake2 PRIVATE game-base)
+target_compile_definitions(game-base PRIVATE GAME_HARD_LINKED=1)
+
+if(QGL)
+  target_link_libraries(quake2 PRIVATE ref-sdlgl)
+  target_compile_definitions(ref-sdlgl PRIVATE REF_HARD_LINKED=1)
+else()
+  target_link_libraries(quake2 PRIVATE ref-softsdl)
+  target_compile_definitions(ref-softsdl PRIVATE REF_HARD_LINKED=1)
+endif()
+
 install (TARGETS quake2 RUNTIME DESTINATION bin)
-install (TARGETS ref-softsdl ref-sdlgl LIBRARY DESTINATION lib/quake2sdl)
-install (TARGETS game-base LIBRARY DESTINATION lib/quake2sdl/baseq2)
+#install (TARGETS ref-softsdl ref-sdlgl LIBRARY DESTINATION lib/quake2sdl)
+#install (TARGETS game-base LIBRARY DESTINATION lib/quake2sdl/baseq2)

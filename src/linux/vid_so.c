@@ -45,35 +45,47 @@ cvar_t        *vid_fullscreen;
 
 // Global variables used internally by this module
 viddef_t    viddef;                // global video state; used by other modules
-void        *reflib_library;        // Handle to refresh DLL 
 qboolean    reflib_active = 0;
 
 #define VID_NUM_MODES ( sizeof( vid_modes ) / sizeof( vid_modes[0] ) )
 
 /** KEYBOARD **************************************************************/
 
+#define KBD_Update_fp KBD_Update
+#define KBD_Init_fp KBD_Init
+#define KBD_Close_fp KBD_Close
+#define RW_IN_Init_fp RW_IN_Init
+#define RW_IN_Shutdown_fp RW_IN_Shutdown
+#define RW_IN_Activate_fp RW_IN_Activate
+#define RW_IN_Commands_fp RW_IN_Commands
+#define RW_IN_Move_fp RW_IN_Move
+#define RW_IN_Frame_fp RW_IN_Frame
+#define RW_Sys_GetClipboardData_fp RW_Sys_GetClipboardData
+
+refexport_t GetRefAPI(refimport_t);
+
 void Do_Key_Event(int key, qboolean down);
 
-void (*KBD_Update_fp)(void);
-void (*KBD_Init_fp)(Key_Event_fp_t fp);
-void (*KBD_Close_fp)(void);
+void KBD_Update_fp(void);
+void KBD_Init_fp(Key_Event_fp_t fp);
+void KBD_Close_fp(void);
 
 /** MOUSE *****************************************************************/
 
 in_state_t in_state;
 
-void (*RW_IN_Init_fp)(in_state_t *in_state_p);
-void (*RW_IN_Shutdown_fp)(void);
-void (*RW_IN_Activate_fp)(qboolean active);
-void (*RW_IN_Commands_fp)(void);
-void (*RW_IN_Move_fp)(usercmd_t *cmd);
-void (*RW_IN_Frame_fp)(void);
+void RW_IN_Init_fp(in_state_t *in_state_p);
+void RW_IN_Shutdown_fp(void);
+void RW_IN_Activate_fp(qboolean active);
+void RW_IN_Commands_fp(void);
+void RW_IN_Move_fp(usercmd_t *cmd);
+void RW_IN_Frame_fp(void);
 
 void Real_IN_Init (void);
 
 /** CLIPBOARD *************************************************************/
 
-char *(*RW_Sys_GetClipboardData_fp)(void);
+char *RW_Sys_GetClipboardData_fp(void);
 
 extern void    VID_MenuShutdown(void);
 /*
@@ -185,28 +197,6 @@ void VID_NewWindow ( int width, int height)
 
 void VID_FreeReflib (void)
 {
-    if (reflib_library) {
-        if (KBD_Close_fp)
-            KBD_Close_fp();
-        if (RW_IN_Shutdown_fp)
-            RW_IN_Shutdown_fp();
-        dlclose(reflib_library);
-    }
-
-    KBD_Init_fp = NULL;
-    KBD_Update_fp = NULL;
-    KBD_Close_fp = NULL;
-    RW_IN_Init_fp = NULL;
-    RW_IN_Shutdown_fp = NULL;
-    RW_IN_Activate_fp = NULL;
-    RW_IN_Commands_fp = NULL;
-    RW_IN_Move_fp = NULL;
-    RW_IN_Frame_fp = NULL;
-    RW_Sys_GetClipboardData_fp = NULL;
-    
-    memset (&re, 0, sizeof(re));
-    reflib_library = NULL;
-    reflib_active  = false;
 }
 
 /*
@@ -217,65 +207,15 @@ VID_LoadRefresh
 qboolean VID_LoadRefresh( char *name )
 {
     refimport_t    ri;
-    GetRefAPI_t    GetRefAPI;
     char    fn[MAX_OSPATH];
     struct stat st;
     extern uid_t saved_euid;
     
     if ( reflib_active )
     {
-        if (KBD_Close_fp)
-            KBD_Close_fp();
-        if (RW_IN_Shutdown_fp)
-            RW_IN_Shutdown_fp();
-        KBD_Close_fp = NULL;
-        RW_IN_Shutdown_fp = NULL;
         re.Shutdown();
         VID_FreeReflib ();
     }
-
-    Com_Printf( "------- Loading %s -------\n", name );
-
-    //regain root
-    seteuid(saved_euid);
-
-    snprintf (fn, MAX_OSPATH, "%s/%s", RESOURCE_LIBDIR, name );
-    
-    if (stat(fn, &st) == -1) {
-        snprintf(fn, MAX_OSPATH, "./%s", name);
-        if (stat(fn, &st) == -1) {
-            char cwd_buf[1024];
-            Com_Printf( "LoadLibrary(\"%s\") failed (stat step: cwd: %s): %s\n", name, getcwd(cwd_buf, sizeof(cwd_buf)), strerror(errno));
-            return false;
-        }
-    }
-    
-    // permission checking
-    if (strstr(fn, "softsdl") == NULL &&
-        strstr(fn, "sdlgl") == NULL) { // softx doesn't require root    
-#if 0
-        if (st.st_uid != 0) {
-            Com_Printf( "LoadLibrary(\"%s\") failed: ref is not owned by root\n", name);
-            return false;
-        }
-        if ((st.st_mode & 0777) & ~0700) {
-            Com_Printf( "LoadLibrary(\"%s\") failed: invalid permissions, must be 700 for security considerations\n", name);
-            return false;
-        }
-#endif
-    } else {
-        // softx requires we give up root now
-        setreuid(getuid(), getuid());
-        setegid(getgid());
-    }
-
-    if ( ( reflib_library = dlopen( fn, RTLD_LAZY ) ) == 0 )
-    {
-        Com_Printf( "LoadLibrary(\"%s\") failed: %s\n", name , dlerror());
-        return false;
-    }
-
-    Com_Printf( "LoadLibrary(\"%s\")\n", fn );
 
     ri.Cmd_AddCommand = Cmd_AddCommand;
     ri.Cmd_RemoveCommand = Cmd_RemoveCommand;
@@ -298,9 +238,6 @@ qboolean VID_LoadRefresh( char *name )
     ri.SetParticlePics = SetParticleImages;
     #endif
 
-    if ( ( GetRefAPI = (void *) dlsym( reflib_library, "GetRefAPI" ) ) == 0 )
-        Com_Error( ERR_FATAL, "dlsym failed on %s", name );
-
     re = GetRefAPI( ri );
 
     if (re.api_version != API_VERSION)
@@ -315,17 +252,6 @@ qboolean VID_LoadRefresh( char *name )
     in_state.viewangles = cl.viewangles;
     in_state.in_strafe_state = &in_strafe.state;
     in_state.in_speed_state = &in_speed.state;
-
-    if ((RW_IN_Init_fp = dlsym(reflib_library, "RW_IN_Init")) == NULL ||
-        (RW_IN_Shutdown_fp = dlsym(reflib_library, "RW_IN_Shutdown")) == NULL ||
-        (RW_IN_Activate_fp = dlsym(reflib_library, "RW_IN_Activate")) == NULL ||
-        (RW_IN_Commands_fp = dlsym(reflib_library, "RW_IN_Commands")) == NULL ||
-        (RW_IN_Move_fp = dlsym(reflib_library, "RW_IN_Move")) == NULL ||
-        (RW_IN_Frame_fp = dlsym(reflib_library, "RW_IN_Frame")) == NULL)
-        Sys_Error("No RW_IN functions in REF.\n");
-
-    /* this one is optional */
-    RW_Sys_GetClipboardData_fp = dlsym(reflib_library, "RW_Sys_GetClipboardData");
     
     Real_IN_Init();
 
@@ -337,22 +263,6 @@ qboolean VID_LoadRefresh( char *name )
     }
 
     /* Init KBD */
-#if 1
-    if ((KBD_Init_fp = dlsym(reflib_library, "KBD_Init")) == NULL ||
-        (KBD_Update_fp = dlsym(reflib_library, "KBD_Update")) == NULL ||
-        (KBD_Close_fp = dlsym(reflib_library, "KBD_Close")) == NULL)
-        Sys_Error("No KBD functions in REF.\n");
-#else
-    {
-        void KBD_Init(void);
-        void KBD_Update(void);
-        void KBD_Close(void);
-
-        KBD_Init_fp = KBD_Init;
-        KBD_Update_fp = KBD_Update;
-        KBD_Close_fp = KBD_Close;
-    }
-#endif
     KBD_Init_fp(Do_Key_Event);
 
     Key_ClearStates();
@@ -441,12 +351,6 @@ void VID_Shutdown (void)
 {
     if ( reflib_active )
     {
-        if (KBD_Close_fp)
-            KBD_Close_fp();
-        if (RW_IN_Shutdown_fp)
-            RW_IN_Shutdown_fp();
-        KBD_Close_fp = NULL;
-        RW_IN_Shutdown_fp = NULL;
         re.Shutdown ();
         VID_FreeReflib ();
     }

@@ -134,8 +134,10 @@ cvar_t  *r_novis;
 cvar_t    *r_speeds;
 cvar_t    *r_lightlevel;    //FIXME HACK
 
+#ifndef REF_HARD_LINKED
 cvar_t    *vid_fullscreen;
 cvar_t    *vid_gamma;
+#endif
 
 //PGM
 cvar_t    *sw_lockpvs;
@@ -1448,7 +1450,7 @@ void Sys_Error (char *error, ...)
     ri.Sys_Error (ERR_FATAL, "%s", text);
 }
 
-void Com_Printf (char *fmt, ...)
+void Com_Printf (char *fmt, ...);
 {
     va_list        argptr;
     char        text[1024];

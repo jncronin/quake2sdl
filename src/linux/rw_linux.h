@@ -21,9 +21,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 typedef void (*Key_Event_fp_t)(int key, qboolean down);
 
-extern void (*KBD_Update_fp)(void);
-extern void (*KBD_Init_fp)(Key_Event_fp_t fp);
-extern void (*KBD_Close_fp)(void);
+#define KBD_Update_fp KBD_Update
+#define KBD_Init_fp KBD_Init
+#define KBD_Close_fp KBD_Close
+
+extern void KBD_Update_fp(void);
+extern void KBD_Init_fp(Key_Event_fp_t fp);
+extern void KBD_Close_fp(void);
 
 void RW_IN_PlatformInit();
 void RW_IN_Activate(qboolean);
