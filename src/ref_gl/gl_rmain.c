@@ -132,9 +132,13 @@ cvar_t    *gl_lockpvs;
 
 cvar_t    *gl_3dlabs_broken;
 
+#ifndef REF_HARD_LINKED
 cvar_t    *vid_fullscreen;
 cvar_t    *vid_gamma;
 cvar_t    *vid_ref;
+#else
+extern cvar_t *vid_ref;
+#endif
 
 /*
 =================
@@ -1494,9 +1498,12 @@ void R_BeginFrame( float camera_separation )
     {
         vid_gamma->modified = false;
 
+#ifndef REF_HARD_LINKED
         if ( gl_state.hwgamma ) {
             UpdateHardwareGamma();
-        } else if ( gl_config.renderer & ( GL_RENDERER_VOODOO ) )
+        } else 
+#endif        
+        if ( gl_config.renderer & ( GL_RENDERER_VOODOO ) )
         {
             char envbuffer[1024];
             float g;

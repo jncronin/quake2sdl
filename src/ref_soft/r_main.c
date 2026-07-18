@@ -1450,7 +1450,7 @@ void Sys_Error (char *error, ...)
     ri.Sys_Error (ERR_FATAL, "%s", text);
 }
 
-void Com_Printf (char *fmt, ...);
+void Com_Printf (char *fmt, ...)
 {
     va_list        argptr;
     char        text[1024];
