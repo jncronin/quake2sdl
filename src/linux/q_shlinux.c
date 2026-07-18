@@ -80,21 +80,30 @@ int Hunk_End (void)
 {
     byte *n;
 
-#if defined(__FreeBSD__)
+#if defined(__FreeBSD__) || defined(__GAMEKID__)
   size_t old_size = maxhunksize;
   size_t new_size = curhunksize + sizeof(int);
   void * unmap_base;
   size_t unmap_len;
 
+#ifdef __GAMEKID__
+    new_size = (new_size + 65535u) & ~65535u;
+    old_size = (old_size + 65535u) & ~65535u;
+#else
   new_size = round_page(new_size);
   old_size = round_page(old_size);
+#endif
   if (new_size > old_size)
       n = 0; /* error */
   else if (new_size < old_size)
   {
+#ifdef __GAMEKID__
+    n = membase;
+#else
     unmap_base = (caddr_t)(membase + new_size);
     unmap_len = old_size - new_size;
     n = munmap(unmap_base, unmap_len) + membase;
+#endif
   }
 #endif
 #if defined(__linux__)
