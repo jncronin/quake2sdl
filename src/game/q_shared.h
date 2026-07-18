@@ -40,13 +40,17 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdlib.h>
 #include <stddef.h>
 #include <time.h>
+#include <limits.h>
 
 #define id386    0
 #define idaxp    0
 
 typedef unsigned char         byte;
+#if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 202311L)
+typedef bool qboolean;
+#else
 typedef enum {false, true}    qboolean;
-
+#endif
 
 #ifndef NULL
 #define NULL ((void *)0)
@@ -63,7 +67,7 @@ typedef enum {false, true}    qboolean;
 #define    MAX_TOKEN_CHARS        128        // max length of an individual token
 
 #define    MAX_QPATH            64        // max length of a quake game pathname
-#define    MAX_OSPATH            128        // max length of a filesystem pathname
+#define    MAX_OSPATH            PATH_MAX        // max length of a filesystem pathname
 
 //
 // per-level limits
