@@ -51,6 +51,9 @@ paint_audio (int, void * stream, int len, void *)
 qboolean
 SNDDMA_Init (void)
 {
+    if(silence)
+        return 1;
+
     SDL_AudioSpec desired, obtained;
     int desired_bits, freq;
     
@@ -100,6 +103,8 @@ SNDDMA_Init (void)
         desired.samples = 1024;
     else
         desired.samples = 512;
+
+    Mix_Init(MIX_INIT_OGG);
     
     if(Mix_OpenAudio(desired.freq, desired.format, desired.channels, desired.samples) == -1)
     {
@@ -130,6 +135,12 @@ SNDDMA_Init (void)
 
     Mix_RegisterEffect(0, paint_audio, NULL, NULL);
     Mix_PlayChannel(0, silence_chunk, -1);
+
+    Mix_Music *mtest = Mix_LoadMUS("music/Track02.ogg");
+    if(mtest)
+    {
+        Mix_PlayMusic(mtest, -1);
+    }
         
     shm = &dma;
     shm->samplebits = obtained.format & SDL_AUDIO_MASK_BITSIZE;
@@ -153,6 +164,8 @@ SNDDMA_GetDMAPos (void)
 void
 SNDDMA_Shutdown (void)
 {
+    return;
+
     if (snd_inited) {
         SDL_CloseAudio ();
         snd_inited = 0;

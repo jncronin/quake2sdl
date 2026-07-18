@@ -771,6 +771,7 @@ void S_ClearBuffer (void)
     else
         clear = 0;
 
+#if 0   // this causes use after free errors
     SNDDMA_BeginPainting ();
     if (dma.buffer) { 
         /* memset(dma.buffer, clear, dma.samples * dma.samplebits/8); */
@@ -785,6 +786,7 @@ void S_ClearBuffer (void)
         }
     }
     SNDDMA_Submit ();
+#endif
 }
 
 /*
