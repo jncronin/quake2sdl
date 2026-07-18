@@ -2,7 +2,7 @@
     snd_sdl.c
 
     Sound code taken from SDLQuake and modified to work with Quake2
-    Robert Bäuml 2001-12-25
+    Robert Bï¿½uml 2001-12-25
 
     This program is free software; you can redistribute it and/or
     modify it under the terms of the GNU General Public License
@@ -26,6 +26,7 @@
 */
 
 #include <SDL.h>
+#include <SDL_mixer.h>
 
 #include "../client/client.h"
 #include "../client/snd_loc.h"
@@ -33,11 +34,14 @@
 static int  snd_inited;
 static dma_t *shm;
 
+static void *silence = NULL;
+static Mix_Chunk *silence_chunk = NULL;
+
 static void
-paint_audio (void *unused, Uint8 * stream, int len)
+paint_audio (int, void * stream, int len, void *)
 {
     if (shm) {
-        shm->buffer = stream;
+        shm->buffer = (byte*)stream;
         shm->samplepos += len / (shm->samplebits / 4);
         // Check for samplepos overflow?
         S_PaintChannels (shm->samplepos);
@@ -97,47 +101,41 @@ SNDDMA_Init (void)
     else
         desired.samples = 512;
     
-    desired.callback = paint_audio;
-    
-    /* Open the audio device */
-    if (SDL_OpenAudio (&desired, &obtained) < 0) {
-        Com_Printf ("Couldn't open SDL audio: %s\n", SDL_GetError ());
+    if(Mix_OpenAudio(desired.freq, desired.format, desired.channels, desired.samples) == -1)
+    {
+        Com_Printf ("Couldn't open SDL mixer: %s\n", SDL_GetError ());
         return 0;
     }
 
-    /* Make sure we can support the audio format */
-    switch (obtained.format) {
-        case AUDIO_U8:
-            /* Supported */
-            break;
-        case AUDIO_S16LSB:
-        case AUDIO_S16MSB:
-            if (((obtained.format == AUDIO_S16LSB) &&
-                 (SDL_BYTEORDER == SDL_LIL_ENDIAN)) ||
-                ((obtained.format == AUDIO_S16MSB) &&
-                 (SDL_BYTEORDER == SDL_BIG_ENDIAN))) {
-                /* Supported */
-                break;
-            }
-            /* Unsupported, fall through */ ;
-        default:
-            /* Not supported -- force SDL to do our bidding */
-            SDL_CloseAudio ();
-            if (SDL_OpenAudio (&desired, NULL) < 0) {
-                Com_Printf ("Couldn't open SDL audio: %s\n", SDL_GetError ());
-                return 0;
-            }
-            memcpy (&obtained, &desired, sizeof (desired));
-            break;
-    }
-    SDL_PauseAudio (0);
+    int o_ch;
+    Mix_QuerySpec(&obtained.freq, &obtained.format, &o_ch);
+    obtained.channels = (Uint8)o_ch;
 
-    /* Fill the audio DMA information block */
+    Mix_AllocateChannels(8);
+    Mix_ReserveChannels(1);     // we use this for our callback audio
+
+    // Generate a silent buffer
+    if(silence)
+    {
+        free(silence);
+    }
+    if(silence_chunk)
+    {
+        Mix_FreeChunk(silence_chunk);
+    }
+    size_t silence_len = desired.samples * obtained.channels *
+        (obtained.format & SDL_AUDIO_MASK_BITSIZE) / 8;
+    silence = calloc(1, silence_len);
+    silence_chunk = Mix_QuickLoad_RAW(silence, silence_len);
+
+    Mix_RegisterEffect(0, paint_audio, NULL, NULL);
+    Mix_PlayChannel(0, silence_chunk, -1);
+        
     shm = &dma;
     shm->samplebits = obtained.format & SDL_AUDIO_MASK_BITSIZE;
     shm->speed = obtained.freq;
     shm->channels = obtained.channels;
-    shm->samples = obtained.samples * shm->channels;
+    shm->samples = desired.samples * shm->channels;
     shm->samplepos = 0;
     shm->submission_chunk = 1;
     shm->buffer = NULL;

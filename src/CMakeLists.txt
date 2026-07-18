@@ -78,7 +78,7 @@ else (WITH_QMAX)
 endif (WITH_QMAX)
 
 add_executable (quake2 ${Q2_SOURCES})
-target_link_libraries (quake2 PRIVATE ${SDL2_LIBRARY} m)
+target_link_libraries (quake2 PRIVATE ${SDL2_LIBRARY} SDL2_mixer::SDL2_mixer m)
 #if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 #  target_link_libraries (quake2 PRIVATE dl)
 #endif (${CMAKE_SYSTEM_NAME} MATCHES "Linux")

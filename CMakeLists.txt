@@ -6,6 +6,7 @@ project (quake2sdl VERSION 0.17)
 set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/Modules")
 set (CMAKE_C_FLAGS_RELEASE "-O3")
 find_package (SDL2 REQUIRED)
+find_package (SDL2_mixer REQUIRED)
 find_package (OpenGL REQUIRED)
 
 option (WITH_RETEX "Support for retexture" OFF)
