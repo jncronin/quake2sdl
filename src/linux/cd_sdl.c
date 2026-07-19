@@ -52,6 +52,7 @@ struct cd_track
 {
     int track_id;
     char path[PATH_MAX];
+    Mix_Music *m;
 
     struct cd_track *next;
 };
@@ -61,12 +62,12 @@ static struct cd_track *tracks = NULL;
 static struct cd_track *last_track = NULL;
 
 // remap array
-static const struct cd_track **remaps = NULL;
+static struct cd_track **remaps = NULL;
 
 // find an entry in the track list
-static const struct cd_track *find_track(int track_id)
+static struct cd_track *find_track(int track_id)
 {
-    const struct cd_track *cur = tracks;
+    struct cd_track *cur = tracks;
 
     while(1)
     {
@@ -77,9 +78,6 @@ static const struct cd_track *find_track(int track_id)
         cur = cur->next;        
     }
 }
-
-// currently playing track
-Mix_Music *ctrack = NULL;
 
 static void CD_f();
 
@@ -99,21 +97,24 @@ void CDAudio_Play(int track, qboolean looping)
 
     CDAudio_Stop();
 
-    const struct cd_track *cur = remaps[track];
+    struct cd_track *cur = remaps[track];
     if(!cur)
     {
         Com_DPrintf("CDAudio: Bad track number: %d\n",track);
         return;
     }
 
-    ctrack = Mix_LoadMUS(cur->path);
-    if(!ctrack)
+    if(!cur->m)
     {
-        Com_DPrintf("CDAudio_Play: Unable to play track: %d: %s (%s)\n", track, cur->path, SDL_GetError());
-        return;
+        cur->m = Mix_LoadMUS(cur->path);
+        if(!cur->m)
+        {
+            Com_DPrintf("CDAudio_Play: Unable to play track: %d: %s (%s)\n", track, cur->path, SDL_GetError());
+            return;
+        }
     }
 
-    Mix_PlayMusic(ctrack, (looping == true) ? -1 : 0);
+    Mix_PlayMusic(cur->m, (looping == true) ? -1 : 0);
     
     playLooping = looping;
 }
@@ -126,12 +127,6 @@ void CDAudio_Stop()
 {
     if(!enabled) return;
     Mix_HaltMusic();
-
-    if(ctrack)
-    {
-        Mix_FreeMusic(ctrack);
-        ctrack = NULL;
-    }
 }
 
 void CDAudio_Pause()
@@ -243,17 +238,17 @@ void CDAudio_Shutdown()
 {
     Mix_HaltMusic();
 
-    if(ctrack)
-    {
-        Mix_FreeMusic(ctrack);
-        ctrack = NULL;
-    }
-
     struct cd_track *cur = tracks;
     while(true)
     {
         if(!cur)
             break;
+
+        if(cur->m)
+        {
+            Mix_FreeMusic(cur->m);
+        }
+        
         struct cd_track *next = cur->next;
         free(cur);
         cur = next;
