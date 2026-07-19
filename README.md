@@ -1,3 +1,12 @@
+Quake2 SDL for GK
+=================
+
+This version has been modified for gk.  Original readme below.
+* Build all as static versions.  Select sdlgl vs sdlsoft via
+  cmake -DQGL=ON/OFF
+* Re-add CD audio (but using .ogg files in ./music directory)
+
+
 Quake2 SDL
 ==========
 
