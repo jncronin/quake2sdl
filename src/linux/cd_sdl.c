@@ -2,7 +2,7 @@
     snd_sdl.c
 
     CD code taken from SDLQuake and modified to work with Quake2
-    Robert Bäuml 2001-12-25
+    Robert Bï¿½uml 2001-12-25
     W.P. van Paassen 2002-01-06
 
     This program is free software; you can redistribute it and/or
@@ -27,7 +27,11 @@
 */
 
 #include <stdio.h>
+#include <sys/types.h>
+#include <dirent.h>
+#include <sys/stat.h>
 #include <SDL.h>
+#include <SDL_mixer.h>
 #include "../client/client.h"
 
 static qboolean cdValid = false;
@@ -41,20 +45,12 @@ cvar_t    *cd_volume;
 cvar_t *cd_nocd;
 cvar_t *cd_dev;
 
-#if 0
-static SDL_CD *cd_id;
-#endif
+
 
 static void CD_f();
 
 static void CDAudio_Eject()
 {
-#if 0
-    if(!cd_id || !enabled) return;
-
-    if(SDL_CDEject(cd_id))
-        Com_DPrintf("Unable to eject CD-ROM tray.\n");
-#endif
 }
 
 void CDAudio_Play(int track, qboolean looping)
@@ -252,7 +248,6 @@ void CDAudio_Update()
 
 int CDAudio_Init()
 {
-#if 0
     cvar_t *cv;
 
     if (initialized)
@@ -268,43 +263,42 @@ int CDAudio_Init()
 
     cd_volume = Cvar_Get ("cd_volume", "1", CVAR_ARCHIVE);
 
-    if (SDL_WasInit(SDL_INIT_EVERYTHING) == 0) {
-        if (SDL_Init(SDL_INIT_CDROM) < 0) {
-            Com_Printf ("Couldn't init SDL cdrom: %s\n", SDL_GetError ());
-            return -1;
-        }
-    } else if (SDL_WasInit(SDL_INIT_CDROM) == 0) {
-        if (SDL_InitSubSystem(SDL_INIT_CDROM) < 0) {
-            Com_Printf ("Couldn't init SDL cdrom: %s\n", SDL_GetError ());
-            return -1;
-        }
-    }
-    
-    cd_id = SDL_CDOpen(0);
-    if(!cd_id)
-    {
-        Com_Printf("CDAudio_Init: Unable to open default CD-ROM drive: %s\n",
-            SDL_GetError());
+    /* Check for files of the form ./music/Trackxx.ogg */
+    DIR *d = opendir("music");
+    if(!d)
         return -1;
+    
+    struct dirent *de;
+    while((de = readdir(d)))
+    {
+        if(de->d_type != DT_REG)
+            continue;
+        if(strlen(de->d_name) != 11)
+            continue;
+        if(strncmp("Track", de->d_name, 5))
+            continue;
+        if(strcmp(".ogg", &de->d_name[7]))
+            continue;
+        if(!isdigit(de->d_name[5]) || !isdigit(de->d_name[6]))
+            continue;
+        
+        char track_no[3];
+        strncpy(track_no, &de->d_name[5], 2);
+        track_no[2] = 0;
+
+        int track_id = atoi(track_no);
+
+        fprintf(stderr, "CD: found track %2d: music/%s\n", track_id, de->d_name);
+
     }
     
     initialized = true;
     enabled = true;
     cdValid = true;
     
-    if(!CD_INDRIVE(SDL_CDStatus(cd_id)))
-    {
-        Com_Printf("CDAudio_Init: No CD in drive.\n");
-        cdValid = false;
-    }
-    if(!cd_id->numtracks)
-    {
-        Com_Printf("CDAudio_Init: CD contains no audio tracks.\n");
-        cdValid = false;
-    }
     Cmd_AddCommand("cd",CD_f);
     Com_Printf("CD Audio Initialized.\n");
-#endif
+
     return 0;
 }
 
