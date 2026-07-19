@@ -136,12 +136,6 @@ SNDDMA_Init (void)
     Mix_RegisterEffect(0, paint_audio, NULL, NULL);
     Mix_PlayChannel(0, silence_chunk, -1);
 
-    Mix_Music *mtest = Mix_LoadMUS("music/Track02.ogg");
-    if(mtest)
-    {
-        Mix_PlayMusic(mtest, -1);
-    }
-        
     shm = &dma;
     shm->samplebits = obtained.format & SDL_AUDIO_MASK_BITSIZE;
     shm->speed = obtained.freq;

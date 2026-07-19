@@ -45,7 +45,41 @@ cvar_t    *cd_volume;
 cvar_t *cd_nocd;
 cvar_t *cd_dev;
 
+static size_t ntracks = 0;
+static int max_track_id = -1;
 
+struct cd_track
+{
+    int track_id;
+    char path[PATH_MAX];
+
+    struct cd_track *next;
+};
+
+// linked list of all tracks
+static struct cd_track *tracks = NULL;
+static struct cd_track *last_track = NULL;
+
+// remap array
+static const struct cd_track **remaps = NULL;
+
+// find an entry in the track list
+static const struct cd_track *find_track(int track_id)
+{
+    const struct cd_track *cur = tracks;
+
+    while(1)
+    {
+        if(!cur)
+            return NULL;
+        if(cur->track_id == track_id)
+            return cur;
+        cur = cur->next;        
+    }
+}
+
+// currently playing track
+Mix_Music *ctrack = NULL;
 
 static void CD_f();
 
@@ -55,195 +89,76 @@ static void CDAudio_Eject()
 
 void CDAudio_Play(int track, qboolean looping)
 {
-#if 0
-    CDstatus cd_stat;
+    if(!enabled) return;
 
-    lastTrack = track+1;
-
-    if(!cd_id || !enabled) return;
-    
-    cd_stat=SDL_CDStatus(cd_id);
-    
-    if(!cdValid)
-    {
-        if(!CD_INDRIVE(cd_stat) ||(!cd_id->numtracks)) return;
-        cdValid = true;
-    }
-
-    if((track < 1) || (track >= cd_id->numtracks))
+    if(track < 0 || track > max_track_id)
     {
         Com_DPrintf("CDAudio: Bad track number: %d\n",track);
         return;
     }
-    track--; /* Convert track from person to SDL value */
-    if(cd_stat == CD_PLAYING)
-    {
-        if(cd_id->cur_track == track) return;
-        CDAudio_Stop();
-    }
 
-    if(SDL_CDPlay(cd_id,cd_id->track[track].offset,
-              cd_id->track[track].length))
+    CDAudio_Stop();
+
+    const struct cd_track *cur = remaps[track];
+    if(!cur)
     {
-        Com_DPrintf("CDAudio_Play: Unable to play track: %d (%s)\n",track+1, SDL_GetError());
+        Com_DPrintf("CDAudio: Bad track number: %d\n",track);
         return;
     }
+
+    ctrack = Mix_LoadMUS(cur->path);
+    if(!ctrack)
+    {
+        Com_DPrintf("CDAudio_Play: Unable to play track: %d: %s (%s)\n", track, cur->path, SDL_GetError());
+        return;
+    }
+
+    Mix_PlayMusic(ctrack, (looping == true) ? -1 : 0);
+    
     playLooping = looping;
-#endif
 }
 
 void CDAudio_RandomPlay(void)
 {
-#if 0
-  int track, i = 0, free_tracks = 0;
-  float f;
-  CDstatus cd_stat;
-  byte* track_bools;
-
-  if (!cd_id || !enabled)
-    return;
-
-  track_bools = (byte*)malloc(cd_id->numtracks* sizeof(byte));
-
-  if (track_bools == 0)
-    return;
-
-  //create array of available audio tracknumbers
-
-  for (; i < cd_id->numtracks; i++)
-    {
-      track_bools[i] = cd_id->track[i].type == SDL_AUDIO_TRACK;
-      free_tracks += track_bools[i];
-    }
-
-  if (!free_tracks)
-    {
-      Com_DPrintf("CDAudio_RandomPlay: Unable to find and play a random audio track, insert an audio cd please");
-      goto free_end;
-    }
-
-  //choose random audio track
-  do
-    {
-      do
-    {
-      f = ((float)rand()) / ((float)RAND_MAX + 1.0);
-      track = (int)(cd_id->numtracks  * f);
-    }
-      while(!track_bools[track]);
-      
-      lastTrack = track+1;
-      
-      cd_stat=SDL_CDStatus(cd_id);
-      
-      if(!cdValid)
-    {
-      if(!CD_INDRIVE(cd_stat) ||(!cd_id->numtracks)) 
-        {
-          goto free_end;
-        }
-      cdValid = true;
-    }
-      
-      if(cd_stat == CD_PLAYING)
-    {
-      if(cd_id->cur_track == track + 1) 
-        {
-          goto free_end;
-        }
-      CDAudio_Stop();
-    }
-      
-      if (SDL_CDPlay(cd_id,cd_id->track[track].offset,
-             cd_id->track[track].length))
-    {
-      track_bools[track] = 0;
-      free_tracks--;
-    }
-      else
-    {
-      playLooping = true;
-      break;
-    }
-    }
-  while (free_tracks > 0);
-
- free_end:
-  free((void*)track_bools);
-#endif
 }
 
 void CDAudio_Stop()
 {
-#if 0
-    int cdstate;
-    if(!cd_id || !enabled) return;
-    cdstate = SDL_CDStatus(cd_id);
-    if((cdstate != CD_PLAYING) && (cdstate != CD_PAUSED)) return;
+    if(!enabled) return;
+    Mix_HaltMusic();
 
-    if(SDL_CDStop(cd_id))
-        Com_DPrintf("CDAudio_Stop: Failed to stop track.\n");
-        
-    playLooping = 0;
-#endif
+    if(ctrack)
+    {
+        Mix_FreeMusic(ctrack);
+        ctrack = NULL;
+    }
 }
 
 void CDAudio_Pause()
 {
-#if 0
-    if(!cd_id || !enabled) return;
-    if(SDL_CDStatus(cd_id) != CD_PLAYING) return;
-
-    if(SDL_CDPause(cd_id))
-        Com_DPrintf("CDAudio_Pause: Failed to pause track.\n");
-#endif
+    if(!enabled) return;
+    Mix_PauseMusic();
 }
-
 
 void CDAudio_Resume()
 {
-#if 0
-    if(!cd_id || !enabled) return;
-    if(SDL_CDStatus(cd_id) != CD_PAUSED) return;
-
-    if(SDL_CDResume(cd_id))
-        Com_DPrintf("CDAudio_Resume: Failed to resume track.\n");
-#endif
+    if(!enabled) return;
+    Mix_ResumeMusic();
 }
 
 void CDAudio_Update()
 {
-#if 0
-    if(!cd_id || !enabled) return;
+    if(!enabled) return;
+
     if(cd_volume && cd_volume->value != cdvolume)
     {
-        if(cdvolume)
-        {
-            Cvar_SetValue("cd_volume",0.0);
-            CDAudio_Pause();
-        }
-        else
-        {
-            Cvar_SetValue("cd_volume",1.0);
-            CDAudio_Resume();
-        }
-        cdvolume = cd_volume->value;
-        return;
+        Mix_VolumeMusic((int)rint(cd_volume->value * (float)MIX_MAX_VOLUME));
     }
     
     if(cd_nocd->value)
     {
         CDAudio_Stop();
-        return;
     }
-    
-    if(playLooping && 
-       (SDL_CDStatus(cd_id) != CD_PLAYING) && 
-       (SDL_CDStatus(cd_id) != CD_PAUSED))
-    {
-        CDAudio_Play(lastTrack,true);
-    }
-#endif
 }
 
 int CDAudio_Init()
@@ -290,6 +205,27 @@ int CDAudio_Init()
 
         fprintf(stderr, "CD: found track %2d: music/%s\n", track_id, de->d_name);
 
+        struct cd_track *t = calloc(sizeof(struct cd_track), 1);
+        t->track_id = track_id;
+        snprintf(t->path, PATH_MAX - 1, "music/%s", de->d_name);
+        t->path[PATH_MAX - 1] = 0;
+
+        if(!tracks)
+            tracks = t;
+        if(last_track)
+            last_track->next = t;
+        last_track = t;
+
+        ntracks++;
+        if(track_id > max_track_id)
+            max_track_id = track_id;
+    }
+
+    // now build an array of remaps
+    remaps = calloc(sizeof(struct cd_track *), max_track_id + 1);
+    for(int track_id = 0; track_id <= max_track_id; track_id++)
+    {
+        remaps[track_id] = find_track(track_id);
     }
     
     initialized = true;
@@ -305,19 +241,33 @@ int CDAudio_Init()
 
 void CDAudio_Shutdown()
 {
-#if 0
-    if(!cd_id) return;
-    CDAudio_Stop();
-    SDL_CDClose(cd_id);
-    cd_id = NULL;
-    
-    if (SDL_WasInit(SDL_INIT_EVERYTHING) == SDL_INIT_CDROM)
-        SDL_Quit();
-    else
-        SDL_QuitSubSystem(SDL_INIT_CDROM);
+    Mix_HaltMusic();
 
+    if(ctrack)
+    {
+        Mix_FreeMusic(ctrack);
+        ctrack = NULL;
+    }
+
+    struct cd_track *cur = tracks;
+    while(true)
+    {
+        if(!cur)
+            break;
+        struct cd_track *next = cur->next;
+        free(cur);
+        cur = next;
+    }
+    tracks = NULL;
+    last_track = NULL;
+
+    if(remaps)
+    {
+        free(remaps);
+        remaps = NULL;
+    }
+    
     initialized = false;
-#endif
 }
 
 static void CD_f()
