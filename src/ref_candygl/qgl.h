@@ -32,7 +32,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #ifndef _WIN32
 //#include <GL/fxmesa.h>
-#include <GL/glx.h>
+//#include <GL/glx.h>
 #endif
 
 qboolean QGL_Init( const char *dllname );
@@ -447,12 +447,14 @@ extern void (*qfxMesaSwapBuffers)(void);
 */
 
 //GLX Functions
+#if 0
 extern XVisualInfo * (*qglXChooseVisual)( Display *dpy, int screen, int *attribList );
 extern GLXContext (*qglXCreateContext)( Display *dpy, XVisualInfo *vis, GLXContext shareList, Bool direct );
 extern void (*qglXDestroyContext)( Display *dpy, GLXContext ctx );
 extern Bool (*qglXMakeCurrent)( Display *dpy, GLXDrawable drawable, GLXContext ctx);
 extern void (*qglXCopyContext)( Display *dpy, GLXContext src, GLXContext dst, GLuint mask );
 extern void (*qglXSwapBuffers)( Display *dpy, GLXDrawable drawable );
+#endif
 
 // 3dfxSetPaletteEXT shunt
 void Fake_glColorTableEXT( GLenum target, GLenum internalformat,

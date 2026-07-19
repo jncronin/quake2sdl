@@ -106,12 +106,14 @@ cvar_t    *r_cellshading_width;
 cvar_t    *con_font;
 cvar_t    *con_font_size;
 
+#ifndef REF_HARD_LINKED
 cvar_t    *cl_3dcam;
 cvar_t    *cl_3dcam_angle;
 cvar_t    *cl_3dcam_chase;
 cvar_t    *cl_3dcam_dist;
 cvar_t    *cl_3dcam_alpha;
 cvar_t    *cl_3dcam_adjust;
+#endif
 
 cvar_t    *gl_ext_swapinterval;
 cvar_t    *gl_ext_multitexture;
@@ -151,9 +153,13 @@ cvar_t    *gl_lockpvs;
 
 cvar_t    *gl_3dlabs_broken;
 
+#ifndef REF_HARD_LINKED
 cvar_t    *vid_fullscreen;
 cvar_t    *vid_gamma;
 cvar_t    *vid_ref;
+#else
+extern cvar_t *vid_ref;
+#endif
 
 /*
 =================
@@ -581,6 +587,9 @@ int texParticle (int type)
     return part_img->texnum;
 }
 
+#ifdef REF_HARD_LINKED
+void vectoanglerolled (vec3_t value1, float angleyaw, vec3_t angles);
+#else
 void vectoanglerolled (vec3_t value1, float angleyaw, vec3_t angles)
 {
     float    forward, yaw, pitch;
@@ -596,6 +605,7 @@ void vectoanglerolled (vec3_t value1, float angleyaw, vec3_t angles)
     angles[YAW] =  yaw;
     angles[ROLL] = - angleyaw;
 }
+#endif
 
 float AngleFind(float input)
 {
