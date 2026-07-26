@@ -106,7 +106,9 @@ void CDAudio_Play(int track, qboolean looping)
 
     if(!cur->m)
     {
+        SDL_LockAudio();
         cur->m = Mix_LoadMUS(cur->path);
+        SDL_UnlockAudio();
         if(!cur->m)
         {
             Com_DPrintf("CDAudio_Play: Unable to play track: %d: %s (%s)\n", track, cur->path, SDL_GetError());
@@ -114,7 +116,9 @@ void CDAudio_Play(int track, qboolean looping)
         }
     }
 
+    SDL_LockAudio();
     Mix_PlayMusic(cur->m, (looping == true) ? -1 : 0);
+    SDL_UnlockAudio();
     
     playLooping = looping;
 }
@@ -126,19 +130,25 @@ void CDAudio_RandomPlay(void)
 void CDAudio_Stop()
 {
     if(!enabled) return;
+    SDL_LockAudio();
     Mix_HaltMusic();
+    SDL_UnlockAudio();
 }
 
 void CDAudio_Pause()
 {
     if(!enabled) return;
+    SDL_LockAudio();
     Mix_PauseMusic();
+    SDL_UnlockAudio();
 }
 
 void CDAudio_Resume()
 {
     if(!enabled) return;
+    SDL_LockAudio();
     Mix_ResumeMusic();
+    SDL_UnlockAudio();
 }
 
 void CDAudio_Update()
@@ -147,7 +157,10 @@ void CDAudio_Update()
 
     if(cd_volume && cd_volume->value != cdvolume)
     {
+        SDL_LockAudio();
         Mix_VolumeMusic((int)rint(cd_volume->value * (float)MIX_MAX_VOLUME));
+        SDL_UnlockAudio();
+        cdvolume = cd_volume->value;
     }
     
     if(cd_nocd->value)
@@ -236,7 +249,9 @@ int CDAudio_Init()
 
 void CDAudio_Shutdown()
 {
+    SDL_LockAudio();
     Mix_HaltMusic();
+    SDL_UnlockAudio();
 
     struct cd_track *cur = tracks;
     while(true)
@@ -246,7 +261,9 @@ void CDAudio_Shutdown()
 
         if(cur->m)
         {
+            SDL_LockAudio();
             Mix_FreeMusic(cur->m);
+            SDL_UnlockAudio();
         }
         
         struct cd_track *next = cur->next;

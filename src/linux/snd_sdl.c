@@ -41,10 +41,12 @@ static void
 paint_audio (int, void * stream, int len, void *)
 {
     if (shm) {
+        SDL_LockAudio();
         shm->buffer = (byte*)stream;
         shm->samplepos += len / (shm->samplebits / 4);
         // Check for samplepos overflow?
         S_PaintChannels (shm->samplepos);
+        SDL_UnlockAudio();
     }
 }
 
