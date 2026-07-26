@@ -84,8 +84,6 @@ add_executable (quake2 ${Q2_SOURCES})
 if(GAMEKID)
   set (SDL2_MIXER_LIBRARIES
     SDL2_mixer::SDL2_mixer-static
-    vorbisfile
-    vorbis
     ogg
   )
 else()
