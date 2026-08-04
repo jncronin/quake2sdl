@@ -192,6 +192,9 @@ void S_PaintChannels(int endtime)
         while (1)
         {
             ps = s_pendingplays.next;
+            if (!ps)
+                break;      // catch early nullref before proper audio start
+            
             if (ps == &s_pendingplays)
                 break;    // no more pending sounds
             if (ps->begin <= paintedtime)
