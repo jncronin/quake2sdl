@@ -3006,7 +3006,18 @@ qboolean QGL_Init( const char *dllname )
     if ( glw_state.OpenGLLib )
         QGL_Shutdown();
     
-    if ( ( glw_state.OpenGLLib = dlopen( dllname, RTLD_LAZY ) ) == 0 )
+    if ( ( glw_state.OpenGLLib = dlopen(
+#ifdef __GAMEKID__
+        NULL,
+#else
+        dllname,
+#endif
+        RTLD_LAZY ) ) == 0 
+#ifdef __GAMEKID__
+        // try once more for gk in case we are given fd 0
+        && (glw_state.OpenGLLib = dlopen(NULL, RTLD_LAZY)) == 0
+#endif    
+    )
     {
         char    fn[MAX_OSPATH];
         char    *path;
